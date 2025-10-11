@@ -1,0 +1,18 @@
+[package]
+name = "drivers"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+version = "0.1.0"
+authors = ["AegisOS Team <dev@aegisos.local>"]
+publish = false
+
+[dependencies]
+bitflags = { workspace = true }
+heapless = { workspace = true }
+log = { workspace = true }
+mk = { path = "../mk" }
+spin = { workspace = true }
+
+[features]
+default = []
+nvme-trace = []

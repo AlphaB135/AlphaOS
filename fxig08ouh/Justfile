@@ -1,0 +1,28 @@
+set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
+
+default:
+	@just --list
+
+# Build all workspace crates for the x86_64 UEFI target.
+build target?="x86_64-unknown-none"
+	cargo build --workspace --target {{target}} -Zbuild-std=core,alloc
+
+# Format the workspace.
+fmt
+	cargo fmt --all
+
+# Clippy linting with nightly toolchain flags.
+clippy target?="x86_64-unknown-none"
+	cargo clippy --workspace --target {{target}} -- -D warnings
+
+# Create a bootable ISO image.
+iso
+	./scripts/gen-iso.sh target/fxig08ouh.iso
+
+# Run the QEMU integration harness.
+run ovmf?="${OVMF:=./ovmf/OVMF_CODE.fd}" disk?="${DISK:=./target/disk.img}"
+	./scripts/run-qemu.sh --ovmf {{ovmf}} --disk {{disk}}
+
+# Headless CI smoke test that exits after serial banner.
+qemu-smoke ovmf?="${OVMF:=./ovmf/OVMF_CODE.fd}" disk?="${DISK:=./target/disk.img}"
+	./scripts/run-qemu.sh --ovmf {{ovmf}} --disk {{disk}} --headless --exit-pattern "AegisOS fxig08ouh ready"

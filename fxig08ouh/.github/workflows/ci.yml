@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      RUSTUP_TOOLCHAIN: nightly
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly
+          components: rust-src, rustfmt, clippy
+      - name: Install packages
+        run: sudo apt-get update && sudo apt-get install -y qemu-system-x86 genisoimage
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
+      - name: Format check
+        run: cargo fmt --all -- --check
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Build
+        run: cargo build --workspace -Zbuild-std=core,alloc --target x86_64-unknown-none
+      - name: QEMU Smoke Test
+        run: |
+          chmod +x scripts/run-qemu.sh
+          ./scripts/run-qemu.sh --ovmf /usr/share/OVMF/OVMF_CODE.fd --disk ./target/disk.img --headless --exit-pattern "AegisOS fxig08ouh ready"
+        continue-on-error: true

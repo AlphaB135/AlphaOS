@@ -1,0 +1,30 @@
+[package]
+name = "boot"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+version = "0.1.0"
+authors = ["AegisOS Team <dev@aegisos.local>"]
+publish = false
+
+[lib]
+name = "boot"
+crate-type = ["cdylib"]
+
+[dependencies]
+linked_list_allocator = { workspace = true }
+log = { workspace = true }
+heapless = { workspace = true }
+mk = { path = "../mk" }
+once_cell = { workspace = true }
+security = { path = "../security" }
+spin = { workspace = true }
+uart_16550 = { workspace = true }
+uefi = { workspace = true, features = ["alloc"] }
+x86_64 = { workspace = true, features = ["instructions", "nightly"] }
+sha2 = { workspace = true }
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"

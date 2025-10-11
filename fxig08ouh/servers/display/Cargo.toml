@@ -1,0 +1,17 @@
+[package]
+name = "display-server"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+version = "0.1.0"
+authors = ["AegisOS Team <dev@aegisos.local>"]
+publish = false
+
+[dependencies]
+gfx = { path = "../../gfx" }
+heapless = { workspace = true }
+log = { workspace = true }
+mk = { path = "../../mk" }
+
+[[bin]]
+name = "display-server"
+path = "src/main.rs"

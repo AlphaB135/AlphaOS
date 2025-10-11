@@ -1,0 +1,6 @@
+target/
+Cargo.lock
+*.img
+*.iso
+ovmf/
+.DS_Store
