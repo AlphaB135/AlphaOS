@@ -7,6 +7,10 @@ pub const IA32_LSTAR: u32 = 0xC000_0082;
 pub const IA32_FMASK: u32 = 0xC000_0084;
 pub const IA32_STAR: u32 = 0xC000_0081;
 
+pub const IA32_SYSENTER_CS: u32 = 0x0000_0174;
+pub const IA32_SYSENTER_ESP: u32 = 0x0000_0175;
+pub const IA32_SYSENTER_EIP: u32 = 0x0000_0176;
+
 const CR0_PG: u64 = 1 << 31;
 const CR0_PE: u64 = 1 << 0;
 const CR0_WP: u64 = 1 << 16;
@@ -14,6 +18,26 @@ const CR4_PAE: u64 = 1 << 5;
 const CR4_PGE: u64 = 1 << 7;
 const EFER_LME: u64 = 1 << 8;
 const EFER_NXE: u64 = 1 << 11;
+
+#[repr(C, packed)]
+pub struct DescriptorTable {
+    pub limit: u16,
+    pub base: u64,
+}
+
+/// Read contents of GDTR.
+pub unsafe fn read_gdtr() -> DescriptorTable {
+    let mut desc = DescriptorTable { limit: 0, base: 0 };
+    asm!("sgdt [{0}]", in(reg) &mut desc, options(nostack));
+    desc
+}
+
+/// Read contents of IDTR.
+pub unsafe fn read_idtr() -> DescriptorTable {
+    let mut desc = DescriptorTable { limit: 0, base: 0 };
+    asm!("sidt [{0}]", in(reg) &mut desc, options(nostack));
+    desc
+}
 
 /// Read CR0.
 pub unsafe fn read_cr0() -> u64 {
@@ -74,6 +98,14 @@ pub unsafe fn rdmsr(msr: u32) -> u64 {
         options(nostack, preserves_flags)
     );
     ((high as u64) << 32) | (low as u64)
+}
+
+/// Read SYSENTER configuration registers.
+pub unsafe fn read_sysenter() -> (u64, u64, u64) {
+    let cs = rdmsr(IA32_SYSENTER_CS);
+    let esp = rdmsr(IA32_SYSENTER_ESP);
+    let eip = rdmsr(IA32_SYSENTER_EIP);
+    (cs, esp, eip)
 }
 
 /// Write an MSR.

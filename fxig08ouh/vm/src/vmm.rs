@@ -112,16 +112,19 @@ unsafe fn host_state() -> HostState {
     let cr0 = transition::read_cr0();
     let cr3 = transition::read_cr3();
     let cr4 = transition::read_cr4();
+    let gdtr = transition::read_gdtr();
+    let idtr = transition::read_idtr();
+    let (_, sysenter_rsp, sysenter_rip) = transition::read_sysenter();
     HostState {
         cr0,
         cr3,
         cr4,
         rip: vmexit_stub as u64,
         rsp: host_stack_top(),
-        gdtr_base: 0,
-        idtr_base: 0,
-        sysenter_rip: 0,
-        sysenter_rsp: host_stack_top(),
+        gdtr_base: gdtr.base,
+        idtr_base: idtr.base,
+        sysenter_rip,
+        sysenter_rsp,
     }
 }
 
@@ -129,14 +132,16 @@ unsafe fn guest_state() -> GuestState {
     let cr0 = transition::read_cr0();
     let cr3 = transition::read_cr3();
     let cr4 = transition::read_cr4();
+    let gdtr = transition::read_gdtr();
+    let idtr = transition::read_idtr();
     GuestState {
         cr0,
         cr3,
         cr4,
         rip: guest_entry_stub as u64,
         rsp: guest_stack_top(),
-        gdtr_base: 0,
-        idtr_base: 0,
+        gdtr_base: gdtr.base,
+        idtr_base: idtr.base,
     }
 }
 
