@@ -3,26 +3,26 @@
 use core::arch::asm;
 
 pub unsafe fn rdmsr(msr: u32) -> u64 {
-    let low: u32;
-    let high: u32;
+    let low: u64;
+    let high: u64;
     asm!(
         "rdmsr",
-        in("ecx") msr,
-        out("eax") low,
-        out("edx") high,
+        in("rcx") msr,
+        lateout("rax") low,
+        lateout("rdx") high,
         options(nostack, preserves_flags)
     );
-    ((high as u64) << 32) | (low as u64)
+    (high << 32) | (low & 0xFFFF_FFFF)
 }
 
 pub unsafe fn wrmsr(msr: u32, value: u64) {
-    let low = value as u32;
-    let high = (value >> 32) as u32;
+    let low = value & 0xFFFF_FFFF;
+    let high = value >> 32;
     asm!(
         "wrmsr",
-        in("ecx") msr,
-        in("eax") low,
-        in("edx") high,
+        in("rcx") msr,
+        in("rax") low,
+        in("rdx") high,
         options(nostack)
     );
 }

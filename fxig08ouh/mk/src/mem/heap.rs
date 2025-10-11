@@ -28,7 +28,7 @@ pub fn init(boot_info: &BootInfo) {
             let size = min(region.length as usize, MAX_HEAP_BYTES);
             unsafe {
                 // SAFETY: start/size derived from firmware-provided usable region.
-                heap.lock().init(start, size);
+                heap.lock().init(start as *mut u8, size);
             }
         }
     }
