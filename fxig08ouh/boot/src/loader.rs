@@ -2,19 +2,12 @@
 
 use alloc::vec::Vec;
 
-use mk::mem::frame::FrameDescriptor;
-use mk::mem::paging::BootPageTables;
 use mk::{BootInfo, MemoryRegion, MemoryRegionKind};
 use uefi::table::boot::{MemoryDescriptor, MemoryType};
 
 use crate::mmap::MAX_MEMORY_REGIONS;
 
 /// Describe page tables allocated during boot to feed into the microkernel.
-pub struct PagingInit {
-    pub pml4_phys: u64,
-    pub frames_used: Vec<FrameDescriptor>,
-}
-
 pub fn build_boot_info(
     descriptors: &[MemoryDescriptor],
     framebuffer: Option<microkernel::FrameBufferInfo>,
