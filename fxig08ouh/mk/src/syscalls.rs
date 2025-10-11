@@ -61,10 +61,11 @@ fn grant_cap(task: TaskId, class_bits: u32, object: u64) -> bool {
 }
 
 #[no_mangle]
-pub extern "C" fn syscall_entry() {
+pub extern "C" fn syscall_entry() -> ! {
     unsafe {
         asm!(
-            "push rax\n\
+            "swapgs\n\
+             push r11\n\
              push rcx\n\
              push rdx\n\
              push rsi\n\
@@ -72,20 +73,13 @@ pub extern "C" fn syscall_entry() {
              push r8\n\
              push r9\n\
              push r10\n\
-             push r11\n\
-             mov rcx, r10\n\
+             mov rdi, rax\n\
+             mov rsi, rcx\n\
              mov rdx, rdx\n\
+             mov r10, r10\n\
              mov r8, r8\n\
              mov r9, r9\n\
-             mov rsi, rsi\n\
-             mov rdi, rdi",
-            options(nostack)
-        );
-    }
-    // TODO: decode arguments from registers and call dispatch.
-    unsafe {
-        asm!(
-            "pop r11\n\
+             // TODO: call into Rust dispatcher once calling convention is finalised\n\
              pop r10\n\
              pop r9\n\
              pop r8\n\
@@ -93,7 +87,8 @@ pub extern "C" fn syscall_entry() {
              pop rsi\n\
              pop rdx\n\
              pop rcx\n\
-             pop rax\n\
+             pop r11\n\
+             swapgs\n\
              sysretq",
             options(noreturn)
         );
