@@ -114,7 +114,7 @@ unsafe fn host_state() -> HostState {
     let cr4 = transition::read_cr4();
     let gdtr = transition::read_gdtr();
     let idtr = transition::read_idtr();
-    let (_, sysenter_rsp, sysenter_rip) = transition::read_sysenter();
+    let (sysenter_cs, sysenter_rsp, sysenter_rip) = transition::read_sysenter();
     HostState {
         cr0,
         cr3,
@@ -123,6 +123,7 @@ unsafe fn host_state() -> HostState {
         rsp: host_stack_top(),
         gdtr_base: gdtr.base,
         idtr_base: idtr.base,
+        sysenter_cs,
         sysenter_rip,
         sysenter_rsp,
     }
