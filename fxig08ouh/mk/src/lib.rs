@@ -9,6 +9,7 @@ pub mod ipc;
 pub mod mem;
 pub mod sched;
 pub mod syscalls;
+pub mod task;
 pub mod time;
 
 use heapless::Vec;

@@ -164,3 +164,25 @@ impl SyscallNumber {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    extern crate std;
+    use super::*;
+    use crate::caps;
+    use crate::ipc;
+
+    fn allow_all(_: TaskId, _: Capability) -> bool { true }
+
+    #[test]
+    fn ipc_send_requires_capability() {
+        caps::init();
+        caps::register_policy(allow_all);
+        ipc::bootstrap();
+        let denied = dispatch(SyscallNumber::IpcSend, [1, 2, 0, 0]);
+        assert_eq!(denied, ERR_CAP_DENIED);
+        let _ = caps::grant(Capability { owner: TaskId(1), class: CapabilityClass::MM, object: 0 });
+        let allowed = dispatch(SyscallNumber::IpcSend, [1, 2, 0, 0]);
+        assert_eq!(allowed, 1);
+    }
+}
