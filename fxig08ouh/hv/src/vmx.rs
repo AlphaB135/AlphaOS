@@ -32,6 +32,15 @@ const VMCS_HOST_ES_SELECTOR: u64 = 0x0C00;
 const VMCS_HOST_FS_SELECTOR: u64 = 0x0C08;
 const VMCS_HOST_GS_SELECTOR: u64 = 0x0C0A;
 const VMCS_HOST_TR_SELECTOR: u64 = 0x0C0C;
+const VMCS_HOST_FS_BASE: u64 = 0x6C06;
+const VMCS_HOST_GS_BASE: u64 = 0x6C08;
+const VMCS_HOST_TR_BASE: u64 = 0x6C0A;
+const VMCS_HOST_GDTR_BASE: u64 = 0x6C0C;
+const VMCS_HOST_IDTR_BASE: u64 = 0x6C0E;
+const VMCS_HOST_SYSENTER_CS: u64 = 0x4C00;
+const VMCS_HOST_SYSENTER_ESP: u64 = 0x6C10;
+const VMCS_HOST_SYSENTER_EIP: u64 = 0x6C12;
+const VMCS_HOST_PAT: u64 = 0x2C00;
 const VMCS_GUEST_CR0: u64 = 0x6800;
 const VMCS_GUEST_CR3: u64 = 0x6802;
 const VMCS_GUEST_CR4: u64 = 0x6804;
@@ -45,6 +54,17 @@ const VMCS_GUEST_ES_SELECTOR: u64 = 0x0800;
 const VMCS_GUEST_FS_SELECTOR: u64 = 0x0808;
 const VMCS_GUEST_GS_SELECTOR: u64 = 0x080A;
 const VMCS_GUEST_TR_SELECTOR: u64 = 0x080C;
+const VMCS_GUEST_FS_BASE: u64 = 0x6806;
+const VMCS_GUEST_GS_BASE: u64 = 0x6808;
+const VMCS_GUEST_TR_BASE: u64 = 0x680A;
+const VMCS_GUEST_GDTR_BASE: u64 = 0x680C;
+const VMCS_GUEST_IDTR_BASE: u64 = 0x680E;
+const VMCS_GUEST_SYSENTER_CS: u64 = 0x482A;
+const VMCS_GUEST_SYSENTER_ESP: u64 = 0x6824;
+const VMCS_GUEST_SYSENTER_EIP: u64 = 0x6826;
+const VMCS_GUEST_LINK_POINTER: u64 = 0x2800;
+const VMCS_GUEST_ACTIVITY_STATE: u64 = 0x4826;
+const VMCS_GUEST_INTERRUPTIBILITY: u64 = 0x4824;
 
 #[derive(Debug)]
 pub enum VmError {
@@ -69,6 +89,10 @@ pub struct HostState {
     pub cr4: u64,
     pub rip: u64,
     pub rsp: u64,
+    pub gdtr_base: u64,
+    pub idtr_base: u64,
+    pub sysenter_rip: u64,
+    pub sysenter_rsp: u64,
 }
 
 pub struct GuestState {
@@ -77,6 +101,8 @@ pub struct GuestState {
     pub cr4: u64,
     pub rip: u64,
     pub rsp: u64,
+    pub gdtr_base: u64,
+    pub idtr_base: u64,
 }
 
 /// Check CPUID leaf 1 ECX bit 5 for VMX support.
@@ -144,6 +170,15 @@ pub unsafe fn configure_vmcs(host: &HostState, guest: &GuestState) -> Result<(),
     vmwrite(VMCS_HOST_FS_SELECTOR, 0)?;
     vmwrite(VMCS_HOST_GS_SELECTOR, 0)?;
     vmwrite(VMCS_HOST_TR_SELECTOR, 0)?;
+    vmwrite(VMCS_HOST_FS_BASE, 0)?;
+    vmwrite(VMCS_HOST_GS_BASE, 0)?;
+    vmwrite(VMCS_HOST_TR_BASE, 0)?;
+    vmwrite(VMCS_HOST_GDTR_BASE, host.gdtr_base)?;
+    vmwrite(VMCS_HOST_IDTR_BASE, host.idtr_base)?;
+    vmwrite(VMCS_HOST_SYSENTER_CS, 0)?;
+    vmwrite(VMCS_HOST_SYSENTER_ESP, host.sysenter_rsp)?;
+    vmwrite(VMCS_HOST_SYSENTER_EIP, host.sysenter_rip)?;
+    vmwrite(VMCS_HOST_PAT, 0)?;
 
     vmwrite(VMCS_GUEST_CR0, guest.cr0)?;
     vmwrite(VMCS_GUEST_CR3, guest.cr3)?;
@@ -158,6 +193,17 @@ pub unsafe fn configure_vmcs(host: &HostState, guest: &GuestState) -> Result<(),
     vmwrite(VMCS_GUEST_FS_SELECTOR, 0)?;
     vmwrite(VMCS_GUEST_GS_SELECTOR, 0)?;
     vmwrite(VMCS_GUEST_TR_SELECTOR, 0)?;
+    vmwrite(VMCS_GUEST_FS_BASE, 0)?;
+    vmwrite(VMCS_GUEST_GS_BASE, 0)?;
+    vmwrite(VMCS_GUEST_TR_BASE, 0)?;
+    vmwrite(VMCS_GUEST_GDTR_BASE, guest.gdtr_base)?;
+    vmwrite(VMCS_GUEST_IDTR_BASE, guest.idtr_base)?;
+    vmwrite(VMCS_GUEST_SYSENTER_CS, 0)?;
+    vmwrite(VMCS_GUEST_SYSENTER_ESP, guest.rsp)?;
+    vmwrite(VMCS_GUEST_SYSENTER_EIP, guest.rip)?;
+    vmwrite(VMCS_GUEST_LINK_POINTER, 0xFFFF_FFFF_FFFF_FFFF)?;
+    vmwrite(VMCS_GUEST_ACTIVITY_STATE, 0)?;
+    vmwrite(VMCS_GUEST_INTERRUPTIBILITY, 0)?;
 
     Ok(())
 }
