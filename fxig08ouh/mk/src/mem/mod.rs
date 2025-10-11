@@ -1,5 +1,6 @@
 //! Memory subsystem: frame allocation, paging, and heap bootstrap.
 
+pub mod frame;
 pub mod heap;
 pub mod paging;
 
@@ -7,7 +8,10 @@ use crate::{BootInfo, MemoryRegionKind};
 
 /// Primary memory initialization entry.
 pub fn init(boot_info: &BootInfo) {
-    paging::init_identity(boot_info);
+    frame::init(boot_info);
+    let pml4 = paging::build_kernel_mappings(boot_info);
+    unsafe { crate::arch::transition::enable_long_mode(pml4); }
+    paging::activate_root(pml4);
     heap::init(boot_info);
 }
 

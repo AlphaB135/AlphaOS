@@ -17,6 +17,12 @@ pub fn efi_main(image_handle: Handle, st: &mut SystemTable<Boot>) -> Status {
 
     install_default_manifest();
 
+    unsafe {
+        // Snapshot control registers before paging setup; long-mode jump happens after page tables are ready.
+        let _ = mk::arch::transition::read_cr0();
+        let _ = mk::arch::transition::read_cr4();
+    }
+
     if let Ok(gop) = st.boot_services().locate_protocol::<GraphicsOutput>() {
         // SAFETY: firmware guarantees the protocol pointer remains valid while BootServices are alive.
         let gop = unsafe { &mut *gop.get() };

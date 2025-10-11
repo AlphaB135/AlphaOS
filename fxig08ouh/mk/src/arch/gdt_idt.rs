@@ -5,7 +5,6 @@ use core::arch::asm;
 use spin::Once;
 use x86_64::structures::gdt::{Descriptor, GlobalDescriptorTable};
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
-use x86_64::structures::DescriptorTablePointer;
 
 use super::interrupts;
 use crate::time::apic;
@@ -23,7 +22,7 @@ pub unsafe fn install() {
     });
 
     let gdt_ptr = gdt.pointer();
-    load_gdt(&gdt_ptr);
+    asm!("lgdt [{0}]", in(reg) &gdt_ptr, options(readonly, nostack));
 
     let idt = IDT.call_once(|| {
         let mut table = InterruptDescriptorTable::new();
@@ -32,17 +31,7 @@ pub unsafe fn install() {
     });
 
     let idt_ptr = idt.pointer();
-    load_idt(&idt_ptr);
-}
-
-/// SAFETY: caller ensures pointer references a valid GDT descriptor.
-unsafe fn load_gdt(ptr: &DescriptorTablePointer) {
-    asm!("lgdt [{0}]", in(reg) ptr, options(readonly, nostack));
-}
-
-/// SAFETY: caller ensures pointer references a valid IDT descriptor.
-unsafe fn load_idt(ptr: &DescriptorTablePointer) {
-    asm!("lidt [{0}]", in(reg) ptr, options(readonly, nostack));
+    asm!("lidt [{0}]", in(reg) &idt_ptr, options(readonly, nostack));
 }
 
 extern "x86-interrupt" fn divide_by_zero(stack: &mut InterruptStackFrame) {

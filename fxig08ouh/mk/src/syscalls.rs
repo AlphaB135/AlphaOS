@@ -64,33 +64,65 @@ fn grant_cap(task: TaskId, class_bits: u32, object: u64) -> bool {
 pub extern "C" fn syscall_entry() -> ! {
     unsafe {
         asm!(
-            "swapgs\n\
-             push r11\n\
-             push rcx\n\
-             push rdx\n\
-             push rsi\n\
-             push rdi\n\
-             push r8\n\
-             push r9\n\
-             push r10\n\
-             mov rdi, rax\n\
-             mov rsi, rcx\n\
-             mov rdx, rdx\n\
-             mov r10, r10\n\
-             mov r8, r8\n\
-             mov r9, r9\n\
-             // TODO: call into Rust dispatcher once calling convention is finalised\n\
-             pop r10\n\
-             pop r9\n\
-             pop r8\n\
-             pop rdi\n\
-             pop rsi\n\
-             pop rdx\n\
-             pop rcx\n\
-             pop r11\n\
-             swapgs\n\
-             sysretq",
+            "swapgs",
+            "push r11",
+            "push rcx",
+            "push rbx",
+            "push rbp",
+            "push r12",
+            "push r13",
+            "push r14",
+            "push r15",
+            "mov rbx, rdi",
+            "mov rbp, rsi",
+            "mov r12, rdx",
+            "mov r13, r10",
+            "mov r14, r8",
+            "mov r15, r9",
+            "mov rdi, rax",
+            "mov rsi, rbx",
+            "mov rdx, rbp",
+            "mov rcx, r12",
+            "mov r8, r13",
+            "mov r9, r14",
+            "sub rsp, 8",
+            "mov [rsp], r15",
+            "call {handler}",
+            "add rsp, 8",
+            "pop r15",
+            "pop r14",
+            "pop r13",
+            "pop r12",
+            "pop rbp",
+            "pop rbx",
+            "pop rcx",
+            "pop r11",
+            "swapgs",
+            "sysretq",
+            handler = sym handle_syscall,
             options(noreturn)
         );
+    }
+}
+
+fn handle_syscall(number: u64, arg0: u64, arg1: u64, arg2: u64, arg3: u64, arg4: u64, arg5: u64) -> u64 {
+    let Some(num) = SyscallNumber::from_u64(number) else {
+        return u64::MAX;
+    };
+    let _ = (arg4, arg5);
+    let args = [arg0, arg1, arg2, arg3];
+    dispatch(num, args)
+}
+
+impl SyscallNumber {
+    fn from_u64(value: u64) -> Option<Self> {
+        match value {
+            0 => Some(SyscallNumber::IpcSend),
+            1 => Some(SyscallNumber::IpcRecv),
+            2 => Some(SyscallNumber::CapGrant),
+            3 => Some(SyscallNumber::SleepMs),
+            4 => Some(SyscallNumber::LogWrite),
+            _ => None,
+        }
     }
 }

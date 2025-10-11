@@ -108,13 +108,14 @@ pub unsafe fn enable_long_mode(pml4_phys: u64) {
 
 /// Enter a long-mode entry point once paging is enabled.
 pub unsafe fn jump_long_mode(entry: u64, stack: u64) -> ! {
+    let selector = 0x08u16;
     asm!(
         "mov rsp, {stack}\n\
          push {sel}\n\
          push {target}\n\
-         retfq",
+         retf",
         stack = in(reg) stack,
-        sel = in(reg) 0x08u64,
+        sel = in(reg) selector as u64,
         target = in(reg) entry,
         options(noreturn)
     );

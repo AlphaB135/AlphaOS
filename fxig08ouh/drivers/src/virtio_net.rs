@@ -28,12 +28,14 @@ pub fn submit_tx(buffer: &[u8]) {
 }
 
 unsafe fn descriptor_copy(src: *const u8, len: usize) {
-    let dest = scratch_dest();
+    let mut src_ptr = src;
+    let mut dest_ptr = scratch_dest();
+    let mut count = len;
     asm!(
-        "rep movsb",
-        inout("rsi") src => _,
-        inout("rdi") dest => _,
-        inout("rcx") len => _,
+        "cld; rep movsb",
+        inout("rsi") src_ptr => _,
+        inout("rdi") dest_ptr => _,
+        inout("rcx") count => _,
         options(nostack, preserves_flags)
     );
 }

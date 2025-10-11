@@ -23,6 +23,7 @@ static BOOT_INFO: Once<BootInfo> = Once::new();
 
 pub const MAX_MEMORY_REGIONS: usize = 256;
 
+
 /// Boot-time framebuffer description provided by the loader.
 #[derive(Clone, Copy, Debug)]
 pub struct FrameBufferInfo {
