@@ -2,6 +2,8 @@
 
 use core::arch::asm;
 
+use raw_cpuid::CpuId;
+
 use crate::msr;
 
 const IA32_FEATURE_CONTROL: u32 = 0x3A;
@@ -132,8 +134,9 @@ pub struct GuestState {
 
 /// Check CPUID leaf 1 ECX bit 5 for VMX support.
 pub fn is_supported() -> bool {
-    let (_, _, ecx, _) = cpuid(1, 0);
-    ecx & (1 << 5) != 0
+    CpuId::new()
+        .get_feature_info()
+        .map_or(false, |info| info.has_vmx())
 }
 
 /// Initialize VMX operation: enable CR4.VMXE, prepare VMXON and VMCS regions, and issue VMXON.
@@ -344,22 +347,4 @@ fn adjust_controls(msr_id: u32, requested: u32) -> u32 {
         let allowed1 = (value >> 32) as u32;
         (requested | allowed0) & allowed1
     }
-}
-
-fn cpuid(leaf: u32, subleaf: u32) -> (u32, u32, u32, u32) {
-    let mut eax = leaf;
-    let mut ebx: u32;
-    let mut ecx = subleaf;
-    let mut edx: u32;
-    unsafe {
-        asm!(
-            "cpuid",
-            inout("eax") eax,
-            out("ebx") ebx,
-            inout("ecx") ecx,
-            out("edx") edx,
-            options(nostack)
-        );
-    }
-    (eax, ebx, ecx, edx)
 }

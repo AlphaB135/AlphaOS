@@ -110,6 +110,21 @@ pub unsafe fn read_sysenter() -> (u64, u64, u64) {
     (cs, esp, eip)
 }
 
+/// Read the IA32_FS_BASE MSR.
+pub unsafe fn read_fs_base() -> u64 {
+    rdmsr(IA32_FS_BASE)
+}
+
+/// Read the IA32_GS_BASE MSR.
+pub unsafe fn read_gs_base() -> u64 {
+    rdmsr(IA32_GS_BASE)
+}
+
+/// Read the IA32_KERNEL_GS_BASE MSR.
+pub unsafe fn read_kernel_gs_base() -> u64 {
+    rdmsr(IA32_KERNEL_GS_BASE)
+}
+
 /// Write an MSR.
 pub unsafe fn wrmsr(msr: u32, value: u64) {
     let low = value as u32;
