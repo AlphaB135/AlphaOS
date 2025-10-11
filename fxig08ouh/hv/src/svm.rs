@@ -35,14 +35,14 @@ const INTERCEPT_MSRPM_BASE: usize = 0x0D8;
 /// Check CPUID vendor string and SVM bit.
 pub fn is_supported() -> bool {
     let cpuid = CpuId::new();
-    match cpuid.get_vendor_info() {
-        Some(vendor) if vendor.as_str() == "AuthenticAMD" => {
-            cpuid
-                .get_extended_function_info()
-                .map_or(false, |info| info.has_svm())
+    if let Some(vendor) = cpuid.get_vendor_info() {
+        if vendor.as_str() == "AuthenticAMD" {
+            if let Some(ext) = cpuid.get_extended_function_info() {
+                return ext.has_svm();
+            }
         }
-        _ => false,
     }
+    false
 }
 
 pub fn init() -> Result<(), SvmError> {

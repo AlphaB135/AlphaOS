@@ -1,4 +1,5 @@
 #![no_std]
+#![feature(abi_x86_interrupt)]
 #![cfg_attr(test, allow(clippy::unwrap_used))]
 
 extern crate alloc;

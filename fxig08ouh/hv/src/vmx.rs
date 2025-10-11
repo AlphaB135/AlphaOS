@@ -134,9 +134,10 @@ pub struct GuestState {
 
 /// Check CPUID leaf 1 ECX bit 5 for VMX support.
 pub fn is_supported() -> bool {
-    CpuId::new()
-        .get_feature_info()
-        .map_or(false, |info| info.has_vmx())
+    match CpuId::new().get_feature_info() {
+        Some(info) => info.has_vmx(),
+        None => false,
+    }
 }
 
 /// Initialize VMX operation: enable CR4.VMXE, prepare VMXON and VMCS regions, and issue VMXON.

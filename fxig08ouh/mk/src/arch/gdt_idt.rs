@@ -16,8 +16,8 @@ static IDT: Once<InterruptDescriptorTable> = Once::new();
 pub unsafe fn install() {
     let gdt = GDT.call_once(|| {
         let mut table = GlobalDescriptorTable::new();
-        table.add_entry(Descriptor::kernel_code_segment());
-        table.add_entry(Descriptor::kernel_data_segment());
+        let _code_selector = table.append(Descriptor::kernel_code_segment());
+        let _data_selector = table.append(Descriptor::kernel_data_segment());
         table
     });
 
@@ -34,7 +34,7 @@ pub unsafe fn install() {
     asm!("lidt [{0}]", in(reg) &idt_ptr, options(readonly, nostack));
 }
 
-extern "x86-interrupt" fn divide_by_zero(stack: &mut InterruptStackFrame) {
+extern "x86-interrupt" fn divide_by_zero(stack: InterruptStackFrame) {
     unsafe {
         interrupts::isr_prologue();
     }
