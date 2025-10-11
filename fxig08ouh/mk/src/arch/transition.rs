@@ -1,0 +1,141 @@
+//! Low-level CPU transition helpers implemented with inline assembly.
+
+use core::arch::asm;
+
+pub const IA32_EFER: u32 = 0xC000_0080;
+pub const IA32_LSTAR: u32 = 0xC000_0082;
+pub const IA32_FMASK: u32 = 0xC000_0084;
+pub const IA32_STAR: u32 = 0xC000_0081;
+
+const CR0_PG: u64 = 1 << 31;
+const CR0_PE: u64 = 1 << 0;
+const CR0_WP: u64 = 1 << 16;
+const CR4_PAE: u64 = 1 << 5;
+const CR4_PGE: u64 = 1 << 7;
+const EFER_LME: u64 = 1 << 8;
+const EFER_NXE: u64 = 1 << 11;
+
+/// Read CR0.
+pub unsafe fn read_cr0() -> u64 {
+    let value: u64;
+    asm!("mov {0}, cr0", out(reg) value, options(nomem, preserves_flags));
+    value
+}
+
+/// Write CR0.
+pub unsafe fn write_cr0(value: u64) {
+    asm!("mov cr0, {0}", in(reg) value, options(nostack, preserves_flags));
+}
+
+/// Read CR3.
+pub unsafe fn read_cr3() -> u64 {
+    let value: u64;
+    asm!("mov {0}, cr3", out(reg) value, options(nomem, preserves_flags));
+    value
+}
+
+/// Write CR3 with the provided physical address of the root page table.
+pub unsafe fn write_cr3(phys: u64) {
+    asm!("mov cr3, {0}", in(reg) phys, options(nostack, preserves_flags));
+}
+
+/// Read CR4.
+pub unsafe fn read_cr4() -> u64 {
+    let value: u64;
+    asm!("mov {0}, cr4", out(reg) value, options(nomem, preserves_flags));
+    value
+}
+
+/// Write CR4.
+pub unsafe fn write_cr4(value: u64) {
+    asm!("mov cr4, {0}", in(reg) value, options(nostack, preserves_flags));
+}
+
+/// Flush the entire TLB.
+pub unsafe fn flush_tlb() {
+    let cr3 = read_cr3();
+    write_cr3(cr3);
+}
+
+/// Invalidate a single page from the TLB.
+pub unsafe fn invlpg(addr: u64) {
+    asm!("invlpg [{0}]", in(reg) addr, options(nostack));
+}
+
+/// Read an MSR.
+pub unsafe fn rdmsr(msr: u32) -> u64 {
+    let low: u32;
+    let high: u32;
+    asm!(
+        "rdmsr",
+        in("ecx") msr,
+        out("eax") low,
+        out("edx") high,
+        options(nostack, preserves_flags)
+    );
+    ((high as u64) << 32) | (low as u64)
+}
+
+/// Write an MSR.
+pub unsafe fn wrmsr(msr: u32, value: u64) {
+    let low = value as u32;
+    let high = (value >> 32) as u32;
+    asm!(
+        "wrmsr",
+        in("ecx") msr,
+        in("eax") low,
+        in("edx") high,
+        options(nostack)
+    );
+}
+
+/// Enable paging and long mode once page tables and CR registers are prepared.
+pub unsafe fn enable_long_mode(pml4_phys: u64) {
+    let mut cr4 = read_cr4();
+    cr4 |= CR4_PAE | CR4_PGE;
+    write_cr4(cr4);
+
+    let mut efer = rdmsr(IA32_EFER);
+    efer |= EFER_LME | EFER_NXE;
+    wrmsr(IA32_EFER, efer);
+
+    write_cr3(pml4_phys);
+
+    let mut cr0 = read_cr0();
+    cr0 |= CR0_PE | CR0_PG | CR0_WP;
+    write_cr0(cr0);
+}
+
+/// Enter a long-mode entry point once paging is enabled.
+pub unsafe fn jump_long_mode(entry: u64, stack: u64) -> ! {
+    asm!(
+        "mov rsp, {stack}\n\
+         push {sel}\n\
+         push {target}\n\
+         retfq",
+        stack = in(reg) stack,
+        sel = in(reg) 0x08u64,
+        target = in(reg) entry,
+        options(noreturn)
+    );
+}
+
+/// Issue the PAUSE instruction for spin loops.
+pub fn pause() {
+    unsafe { asm!("pause", options(nomem, preserves_flags)); }
+}
+
+/// Halt the CPU until the next interrupt.
+pub fn halt() {
+    unsafe { asm!("hlt", options(nomem, preserves_flags)); }
+}
+
+/// Globally enable interrupts.
+pub unsafe fn sti() {
+    asm!("sti", options(nomem, preserves_flags));
+}
+
+/// Globally disable interrupts.
+pub unsafe fn cli() {
+    asm!("cli", options(nomem, preserves_flags));
+}

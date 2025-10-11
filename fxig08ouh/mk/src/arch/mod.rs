@@ -2,6 +2,9 @@
 
 pub mod gdt_idt;
 pub mod interrupts;
+pub mod transition;
+
+pub use transition::{cli, halt, pause, sti};
 
 /// Called once microkernel subsystems are initialized to inform observers (serial/framebuffer).
 pub fn announce_ready() {
@@ -10,8 +13,5 @@ pub fn announce_ready() {
 
 /// Hint the CPU to sleep until the next interrupt.
 pub fn idle() {
-    // SAFETY: `core::arch::asm!("hlt")` requires interrupts enabled.
-    unsafe {
-        core::arch::asm!("hlt", options(nomem, nostack, preserves_flags));
-    }
+    halt();
 }
