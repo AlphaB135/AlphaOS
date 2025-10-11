@@ -1,4 +1,4 @@
-//! AMD SVM initialization stubs.
+//! AMD SVM initialization helpers.
 
 use core::arch::asm;
 
@@ -49,6 +49,30 @@ pub unsafe fn vmcb_ptr() -> Option<*mut u8> {
     }
 }
 
+pub unsafe fn configure_vmcb(vmcb: *mut u8, guest_rip: u64, guest_rsp: u64) {
+    core::ptr::write_bytes(vmcb, 0, 4096);
+    let rip_ptr = vmcb.add(0x480) as *mut u64;
+    let rsp_ptr = vmcb.add(0x488) as *mut u64;
+    let rflags_ptr = vmcb.add(0x490) as *mut u64;
+    rip_ptr.write(guest_rip);
+    rsp_ptr.write(guest_rsp);
+    rflags_ptr.write(0x2);
+}
+
+pub unsafe fn vmrun(vmcb: *const u8) {
+    asm!("vmrun {0}", in(reg) vmcb, options(nostack));
+}
+
+pub unsafe fn vmsave(vmcb: *const u8) {
+    asm!("vmsave {0}", in(reg) vmcb, options(nostack));
+}
+
+pub unsafe fn vmload(vmcb: *const u8) {
+    asm!("vmload {0}", in(reg) vmcb, options(nostack));
+}
+
+pub fn active() -> bool { unsafe { ACTIVE } }
+
 unsafe fn enable_svme() {
     let mut efer = msr::rdmsr(IA32_EFER);
     efer |= EFER_SVME;
@@ -81,17 +105,3 @@ fn cpuid(leaf: u32, subleaf: u32) -> (u32, u32, u32, u32) {
     }
     (eax, ebx, ecx, edx)
 }
-
-pub unsafe fn vmrun(vmcb: *const u8) {
-    asm!("vmrun {0}", in(reg) vmcb, options(nostack));
-}
-
-pub unsafe fn vmsave(vmcb: *const u8) {
-    asm!("vmsave {0}", in(reg) vmcb, options(nostack));
-}
-
-pub unsafe fn vmload(vmcb: *const u8) {
-    asm!("vmload {0}", in(reg) vmcb, options(nostack));
-}
-
-pub fn active() -> bool { unsafe { ACTIVE } }

@@ -11,8 +11,8 @@ pub fn init(boot_info: &BootInfo) {
     unsafe {
         for descriptor in boot_info.memory_regions.iter() {
             if descriptor.kind == MemoryRegionKind::Usable {
-                NEXT_FRAME = descriptor.base;
-                LIMIT = descriptor.base + descriptor.length;
+                NEXT_FRAME = align_up(descriptor.base, 0x1000);
+                LIMIT = (descriptor.base + descriptor.length) & !0xFFF;
                 break;
             }
         }
@@ -25,11 +25,15 @@ pub fn alloc() -> Option<u64> {
             return None;
         }
         let frame = NEXT_FRAME;
-        NEXT_FRAME += 0x1000;
+        NEXT_FRAME = NEXT_FRAME.saturating_add(0x1000);
         Some(frame)
     }
 }
 
 pub fn range() -> RangeInclusive<u64> {
     unsafe { NEXT_FRAME..=LIMIT }
+}
+
+const fn align_up(value: u64, align: u64) -> u64 {
+    ((value + align - 1) / align) * align
 }

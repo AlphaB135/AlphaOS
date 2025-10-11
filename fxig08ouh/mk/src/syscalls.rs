@@ -27,24 +27,56 @@ pub fn install() {
     }
 }
 
+const ERR_CAP_DENIED: u64 = 0xFFFF_FFFF_FFFF_FFFE;
+
 pub fn dispatch(num: SyscallNumber, args: [u64; 4]) -> u64 {
+    let caller = TaskId(args[0] as u32);
     match num {
         SyscallNumber::IpcSend => {
+            if let Err(code) = require_cap(caller, CapabilityClass::MM) {
+                return code;
+            }
             let msg = Message {
                 ty: MessageType::Send,
-                src: args[0] as u32,
+                src: caller.0,
                 dst: args[1] as u32,
                 payload: [args[2], args[3], 0, 0],
             };
             send(msg) as u64
         }
-        SyscallNumber::IpcRecv => recv().map(|m| m.src as u64).unwrap_or(u64::MAX),
-        SyscallNumber::CapGrant => grant_cap(TaskId(args[0] as u32), args[1] as u32, args[2]) as u64,
+        SyscallNumber::IpcRecv => {
+            if let Err(code) = require_cap(caller, CapabilityClass::MM) {
+                return code;
+            }
+            recv().map(|m| m.src as u64).unwrap_or(u64::MAX)
+        }
+        SyscallNumber::CapGrant => {
+            if let Err(code) = require_cap(caller, CapabilityClass::MM) {
+                return code;
+            }
+            grant_cap(caller, args[1] as u32, args[2]) as u64
+        }
         SyscallNumber::SleepMs => {
-            crate::time::hpet::sleep_ms(args[0]);
+            if let Err(code) = require_cap(caller, CapabilityClass::TIME) {
+                return code;
+            }
+            crate::time::hpet::sleep_ms(args[1]);
             0
         }
-        SyscallNumber::LogWrite => 0,
+        SyscallNumber::LogWrite => {
+            if let Err(code) = require_cap(caller, CapabilityClass::GPU) {
+                return code;
+            }
+            0
+        }
+    }
+}
+
+fn require_cap(task: TaskId, class: CapabilityClass) -> Result<(), u64> {
+    if caps::has(task, class) {
+        Ok(())
+    } else {
+        Err(ERR_CAP_DENIED)
     }
 }
 
@@ -73,22 +105,28 @@ pub extern "C" fn syscall_entry() -> ! {
             "push r13",
             "push r14",
             "push r15",
-            "mov rbx, rdi",
-            "mov rbp, rsi",
-            "mov r12, rdx",
-            "mov r13, r10",
-            "mov r14, r8",
-            "mov r15, r9",
+            "push rdi",
+            "push rsi",
+            "push rdx",
+            "push r10",
+            "push r8",
+            "push r9",
             "mov rdi, rax",
-            "mov rsi, rbx",
-            "mov rdx, rbp",
-            "mov rcx, r12",
-            "mov r8, r13",
-            "mov r9, r14",
-            "sub rsp, 8",
-            "mov [rsp], r15",
+            "mov rsi, [rsp + 40]",
+            "mov rdx, [rsp + 32]",
+            "mov rcx, [rsp + 24]",
+            "mov r8,  [rsp + 16]",
+            "mov r9,  [rsp + 8]",
+            "mov rax, [rsp]",
+            "push rax",
             "call {handler}",
             "add rsp, 8",
+            "pop r9",
+            "pop r8",
+            "pop r10",
+            "pop rdx",
+            "pop rsi",
+            "pop rdi",
             "pop r15",
             "pop r14",
             "pop r13",
