@@ -76,15 +76,15 @@ pub unsafe fn configure_vmcb(vmcb: *mut u8, guest_rip: u64, guest_rsp: u64) {
 }
 
 pub unsafe fn vmrun(vmcb: *const u8) {
-    asm!("vmrun {0}", in(reg) vmcb, options(nostack));
+    asm!("vmrun rax", in("rax") vmcb as u64, options(nostack));
 }
 
 pub unsafe fn vmsave(vmcb: *const u8) {
-    asm!("vmsave {0}", in(reg) vmcb, options(nostack));
+    asm!("vmsave rax", in("rax") vmcb as u64, options(nostack));
 }
 
 pub unsafe fn vmload(vmcb: *const u8) {
-    asm!("vmload {0}", in(reg) vmcb, options(nostack));
+    asm!("vmload rax", in("rax") vmcb as u64, options(nostack));
 }
 
 pub fn active() -> bool { unsafe { ACTIVE } }
