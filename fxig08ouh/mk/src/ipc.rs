@@ -1,5 +1,7 @@
 //! Micro-IPC primitives (Send, Recv, Call) using bounded queues.
 
+use core::arch::asm;
+
 use heapless::Deque;
 use spin::Mutex;
 
@@ -29,10 +31,24 @@ pub fn bootstrap() {
 
 /// Send a message, returning `false` when the queue is full.
 pub fn send(msg: Message) -> bool {
-    QUEUE.lock().push_back(msg).is_ok()
+    let mut queue = QUEUE.lock();
+    spin_hint();
+    queue.push_back(msg).is_ok()
 }
 
 /// Receive the next message if available.
 pub fn recv() -> Option<Message> {
-    QUEUE.lock().pop_front()
+    let mut queue = QUEUE.lock();
+    let msg = queue.pop_front();
+    if msg.is_none() {
+        spin_hint();
+    }
+    msg
+}
+
+#[inline(always)]
+fn spin_hint() {
+    unsafe {
+        asm!("pause", options(nomem, preserves_flags));
+    }
 }

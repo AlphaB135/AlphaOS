@@ -1,5 +1,7 @@
 //! Round-robin scheduler stub with a single core run queue.
 
+use core::arch::asm;
+
 use heapless::Deque;
 use spin::Mutex;
 
@@ -24,5 +26,14 @@ pub fn tick() {
     let mut queue = RUN_QUEUE.lock();
     if let Some(task) = queue.pop_front() {
         queue.push_back(task).ok();
+    } else {
+        spin_pause();
+    }
+}
+
+#[inline(always)]
+fn spin_pause() {
+    unsafe {
+        asm!("pause", options(nomem, preserves_flags));
     }
 }
