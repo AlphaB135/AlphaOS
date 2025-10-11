@@ -51,7 +51,9 @@ fn register_tasks(manifest: &Manifest) {
             3 => b"fs",
             _ => b"task",
         };
-        let _ = task::register(TaskId(entry.task), name, entry.capabilities);
+        if task::register(TaskId(entry.task), name, entry.capabilities) {
+            let _ = task::activate(TaskId(entry.task));
+        }
     }
 }
 

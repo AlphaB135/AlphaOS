@@ -62,3 +62,16 @@ fn policy_allows(task: TaskId, cap: Capability) -> bool {
         true
     }
 }
+
+pub fn revoke(task: TaskId, class: Option<CapabilityClass>) {
+    CAP_TABLE.lock().retain(|cap| {
+        if cap.owner != task {
+            return true;
+        }
+        if let Some(target) = class {
+            !cap.class.contains(target)
+        } else {
+            false
+        }
+    });
+}

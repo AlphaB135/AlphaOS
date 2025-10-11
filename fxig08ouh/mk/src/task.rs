@@ -46,10 +46,25 @@ pub fn register(id: TaskId, name: &[u8], allowed: CapabilityClass) -> bool {
     inserted
 }
 
-pub fn set_state(id: TaskId, state: TaskState) {
+pub fn activate(id: TaskId) -> bool {
     let mut tasks = TASKS.lock();
     if let Some(task) = tasks.iter_mut().find(|task| task.id == id) {
-        task.state = state;
+        task.state = TaskState::Active;
+        true
+    } else {
+        false
+    }
+}
+
+pub fn suspend(id: TaskId) -> bool {
+    let mut tasks = TASKS.lock();
+    if let Some(task) = tasks.iter_mut().find(|task| task.id == id) {
+        task.state = TaskState::Suspended;
+        task.allowed = CapabilityClass::empty();
+        caps::revoke(id, None);
+        true
+    } else {
+        false
     }
 }
 
@@ -58,6 +73,7 @@ pub fn profile(id: TaskId) -> Option<TaskProfile> {
 }
 
 pub fn grant_allowed_caps(id: TaskId, allowed: CapabilityClass) {
+    caps::revoke(id, None);
     const CLASSES: [CapabilityClass; 7] = [
         CapabilityClass::FILE,
         CapabilityClass::NET,
@@ -104,8 +120,21 @@ mod tests {
         caps::init();
         caps::register_policy(allow_all);
         assert!(register(TaskId(10), b"display", CapabilityClass::GPU | CapabilityClass::INPUT));
+        activate(TaskId(10));
         let profile = profile(TaskId(10)).expect("profile");
-        assert_eq!(profile.state, TaskState::Registered);
+        assert_eq!(profile.state, TaskState::Active);
         assert!(profile.allowed.contains(CapabilityClass::GPU));
+    }
+
+    #[test]
+    fn suspend_revokes_capabilities() {
+        caps::init();
+        caps::register_policy(allow_all);
+        assert!(register(TaskId(20), b"net", CapabilityClass::NET | CapabilityClass::MM));
+        activate(TaskId(20));
+        assert!(caps::has(TaskId(20), CapabilityClass::NET));
+        suspend(TaskId(20));
+        assert!(!caps::has(TaskId(20), CapabilityClass::NET));
+        assert_eq!(profile(TaskId(20)).unwrap().state, TaskState::Suspended);
     }
 }

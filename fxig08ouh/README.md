@@ -15,7 +15,8 @@ This repository intentionally avoids importing Linux kernel sources or assuming 
 1. Install the Rust toolchain described in `rust-toolchain.toml` (`rustup toolchain install nightly --component rust-src`).
 2. Fetch build helpers: `cargo install just cargo-binutils` and ensure `lld` is available.
 3. Obtain OVMF firmware (see `scripts/build-ovmf.md`).
-4. Build everything: `just build` (or `cargo build -Zbuild-std=core,alloc --target x86_64-unknown-none`).
+4. Verify toolchain: `scripts/check-toolchain.sh` (installs nightly if missing).
+5. Build everything: `just build` (or `cargo build -Zbuild-std=core,alloc --target x86_64-unknown-none`).
 5. Run the Week-1/2 demo in QEMU: `scripts/run-qemu.sh --ovmf /path/to/OVMF_CODE.fd`.
 6. Regenerate the EFI boot image: `scripts/gen-iso.sh target/ovmf.img`.
 
