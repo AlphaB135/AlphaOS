@@ -77,7 +77,7 @@ pub unsafe fn launch() {
     }
 }
 
-unsafe fn vmx_launch(vmcs: *mut u8) {
+unsafe fn vmx_launch(_vmcs: *mut u8) {
     loop {
         let mut status: u8;
         asm!(
@@ -118,6 +118,10 @@ unsafe fn host_state() -> HostState {
         cr4,
         rip: vmexit_stub as u64,
         rsp: host_stack_top(),
+        gdtr_base: 0,
+        idtr_base: 0,
+        sysenter_rip: 0,
+        sysenter_rsp: host_stack_top(),
     }
 }
 
@@ -131,6 +135,8 @@ unsafe fn guest_state() -> GuestState {
         cr4,
         rip: guest_entry_stub as u64,
         rsp: guest_stack_top(),
+        gdtr_base: 0,
+        idtr_base: 0,
     }
 }
 
