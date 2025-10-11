@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use mk::{BootInfo, FrameBufferInfo};
 use uefi::prelude::*;
 use uefi::proto::console::gop::GraphicsOutput;
@@ -6,6 +8,7 @@ use uefi::Status;
 use security::install_default_manifest;
 
 use crate::framebuffer::{self, BootFrameBuffer};
+use crate::loader;
 use crate::measured_boot;
 use crate::mmap;
 
@@ -31,14 +34,9 @@ pub fn efi_main(image_handle: Handle, st: &mut SystemTable<Boot>) -> Status {
         framebuffer::draw_banner();
     }
 
-    let memory_regions = mmap::collect_memory_map(st.boot_services());
+    let descriptors = mmap::collect_memory_map(st.boot_services());
 
-    let boot_info = BootInfo {
-        memory_regions,
-        framebuffer: framebuffer::current().map(|fb| FrameBufferInfo { ..fb.info }),
-        rsdp_addr: locate_rsdp(st).ok(),
-    };
-
+    let boot_info = loader::build_boot_info(&descriptors, framebuffer::current().map(|fb| FrameBufferInfo { ..fb.info }), locate_rsdp(st).ok());
     measured_boot::measure_boot_info(st, &boot_info);
 
     mk::init(boot_info)

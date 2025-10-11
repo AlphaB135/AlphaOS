@@ -126,6 +126,8 @@ unsafe fn host_state() -> HostState {
         sysenter_cs,
         sysenter_rip,
         sysenter_rsp,
+        fs_base: transition::read_fs_base(),
+        gs_base: transition::read_gs_base(),
     }
 }
 
@@ -143,6 +145,8 @@ unsafe fn guest_state() -> GuestState {
         rsp: guest_stack_top(),
         gdtr_base: gdtr.base,
         idtr_base: idtr.base,
+        fs_base: 0,
+        gs_base: 0,
     }
 }
 

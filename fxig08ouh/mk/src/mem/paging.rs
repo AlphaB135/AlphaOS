@@ -8,7 +8,7 @@ const ENTRIES: usize = 512;
 const PRESENT_WRITE: u64 = 0x3;
 const HUGE_PAGE: u64 = 1 << 7;
 const HIGHER_HALF_BASE: u64 = 0xFFFF_8000_0000_0000;
-const MAX_PD_COUNT: usize = 8;
+const MAX_PD_COUNT: usize = 64;
 
 #[repr(C, align(4096))]
 struct PageTable {
