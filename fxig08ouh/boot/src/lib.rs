@@ -23,7 +23,7 @@ fn panic(info: &PanicInfo) -> ! {
 #[no_mangle]
 pub extern "efiapi" fn efi_main(
     image_handle: uefi::Handle,
-    mut system_table: uefi::table::SystemTable<uefi::table::Boot>,
+    system_table: uefi::table::SystemTable<uefi::table::Boot>,
 ) -> uefi::Status {
-    uefi_entry::efi_main(image_handle, &mut system_table)
+    uefi_entry::efi_main(image_handle, system_table)
 }

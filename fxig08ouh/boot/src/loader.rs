@@ -1,20 +1,18 @@
-//! UEFI loader helpers: gather memory map, construct initial page tables, and hand off to microkernel.
-
-use alloc::vec::Vec;
+//! UEFI loader helpers: gather memory map, translate it, and hand off to the microkernel.
 
 use mk::{BootInfo, MemoryRegion, MemoryRegionKind};
-use uefi::table::boot::{MemoryDescriptor, MemoryType};
+use uefi::table::boot::{MemoryMap, MemoryType};
 
 use crate::mmap::MAX_MEMORY_REGIONS;
 
-/// Describe page tables allocated during boot to feed into the microkernel.
+/// Translate the firmware memory map into the microkernel representation.
 pub fn build_boot_info(
-    descriptors: &[MemoryDescriptor],
+    memory_map: &MemoryMap<'static>,
     framebuffer: Option<microkernel::FrameBufferInfo>,
     rsdp: Option<u64>,
 ) -> BootInfo {
     let mut regions = mk::BootMemoryMap::new();
-    for desc in descriptors.iter().take(MAX_MEMORY_REGIONS) {
+    for desc in memory_map.entries().take(MAX_MEMORY_REGIONS) {
         let region = MemoryRegion {
             base: desc.phys_start,
             length: desc.page_count * 4096,
