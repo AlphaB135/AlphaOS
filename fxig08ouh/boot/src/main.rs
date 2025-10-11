@@ -8,7 +8,6 @@ use core::panic::PanicInfo;
 mod framebuffer;
 mod loader;
 mod measured_boot;
-mod mmap;
 mod uefi_entry;
 
 /// Panic handler prints the panic message using the early framebuffer and halts.

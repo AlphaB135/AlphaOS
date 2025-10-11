@@ -13,10 +13,6 @@ pub const IA32_FS_BASE: u32 = 0xC000_0100;
 pub const IA32_GS_BASE: u32 = 0xC000_0101;
 pub const IA32_KERNEL_GS_BASE: u32 = 0xC000_0102;
 
-pub const IA32_SYSENTER_CS: u32 = 0x0000_0174;
-pub const IA32_SYSENTER_ESP: u32 = 0x0000_0175;
-pub const IA32_SYSENTER_EIP: u32 = 0x0000_0176;
-
 const CR0_PG: u64 = 1 << 31;
 const CR0_PE: u64 = 1 << 0;
 const CR0_WP: u64 = 1 << 16;

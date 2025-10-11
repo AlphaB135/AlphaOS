@@ -6,10 +6,6 @@ version = "0.1.0"
 authors = ["AegisOS Team <dev@aegisos.local>"]
 publish = false
 
-[lib]
-name = "boot"
-crate-type = ["cdylib"]
-
 [dependencies]
 linked_list_allocator = { workspace = true }
 log = { workspace = true }

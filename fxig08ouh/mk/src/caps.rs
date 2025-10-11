@@ -7,6 +7,7 @@ use spin::Mutex;
 use crate::sched::TaskId;
 
 bitflags! {
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub struct CapabilityClass: u32 {
         const FILE = 0b0000_0001;
         const NET = 0b0000_0010;

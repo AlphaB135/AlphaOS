@@ -1,14 +1,14 @@
 //! UEFI loader helpers: gather memory map, translate it, and hand off to the microkernel.
 
-use mk::{BootInfo, MemoryRegion, MemoryRegionKind};
+use mk::{BootInfo, FrameBufferInfo, MemoryRegion, MemoryRegionKind};
 use uefi::table::boot::{MemoryMap, MemoryType};
 
-use crate::mmap::MAX_MEMORY_REGIONS;
+const MAX_MEMORY_REGIONS: usize = 256;
 
 /// Translate the firmware memory map into the microkernel representation.
 pub fn build_boot_info(
     memory_map: &MemoryMap<'static>,
-    framebuffer: Option<microkernel::FrameBufferInfo>,
+    framebuffer: Option<FrameBufferInfo>,
     rsdp: Option<u64>,
 ) -> BootInfo {
     let mut regions = mk::BootMemoryMap::new();
